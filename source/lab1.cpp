@@ -1,6 +1,6 @@
 #include <vector>
 #include <initializer_list>
-#include <algorithm>
+#include <utility>
 #include <cmath>
 #include <limits>
 #include <cassert>
@@ -37,6 +37,9 @@ public:
 		return coeffs.size();
 	}
 
+	void shrink(){
+		coeffs.resize(size());
+	}
 
 	double operator[](size_t i) const{
 		if (i < coeffs.size())
@@ -58,6 +61,8 @@ public:
 		}
 		return res;
 	}
+
+
 private:
 	std::vector<double> coeffs;
 };
@@ -114,51 +119,73 @@ std::ostream& operator<<(std::ostream& stream, const Pynomial& p){
 	return stream;
 }
 
+namespace Nodes{
+	class Root{
+	public:
+		Root(size_t N, double A, double B)
+			: n(N), a(A), b(B){};
+		virtual ~Root() = default;
+		virtual double operator[](size_t) const =0;
+		double at(size_t i) const {return this->operator[](i);};
+
+		size_t size() const{
+			return n;
+		}
+
+		std::pair<double, double> interval() const{
+			return {a, b};
+		}
+	protected:
+		size_t n;
+		double a, b;
+	};
+
+
+	class Uniform : public Nodes::Root{
+	public:
+		Uniform(size_t N, double A, double B)
+			: Root(N, A, B) {}
+
+		double operator[](size_t i) const{
+			return a + i * (b - a) / n;
+		}
+	};
+}
+
+
 class LagrangeInterpolator{
 public:
 	static double f(double x);
 
 	LagrangeInterpolator()
-		: P(), a(0), b(1), niters(10), npoints(0) {}
+		: P(), nodes() {}
 
-	void setInterval(double A, double B){
-		assert(a < b);
-		a = A; b = B;
+	void setNodes(Nodes::Root *v){
+		nodes = v;
 	}
-	void fitUniform(size_t N) {
-		npoints = N;
-		for (size_t i = 0; i < npoints; ++i){
-			double xi = a + i * (b - a) / N;
+
+
+	void fitUniform() {
+		for (size_t i = 0; i < nodes->size(); ++i){
 			Pynomial prod{1};
-			for (size_t j = 0; j < N; ++j){
+			for (size_t j = 0; j < nodes->size(); ++j){
 				if (j == i)
 					continue;
-				double xj = a + j * (b - a) / N;
-				prod = prod * Pynomial{-xj, 1} / (xi - xj);
+				prod = prod * Pynomial{-nodes->at(j), 1} / (nodes->at(i) - nodes->at(j));
 			}
-			P = P + prod * Pynomial{f(xi)};
+			P = P + prod * Pynomial{f(nodes->at(i))};
 		}
 	}
 
 	double precision() const{
 		srand(time(NULL));
 		double eps = 0;
-		for (size_t i = 0; i < niters; ++i){
-			double x = ((double) rand() / (RAND_MAX)) * (b - a) + a;
+		for (size_t i = 0; i < nodes->size(); ++i){
+			double x = ((double) rand() / (RAND_MAX)) *
+					(nodes->interval().second - nodes->interval().first) + nodes->interval().first;
 			eps = std::max<double>(eps, abs(f(x)-P(x)));
 		}
 		return eps;
-	}
-
-	bool fitPrecision(double eps){
-		// not stable
-		for (size_t k = 1; k < 100; ++k){
-			fitUniform(10 * k);
-			if (precision() < eps){
-				return true;
-			}
-		}
-		return false;
 	}
 
 	Pynomial getPolynom() const{
@@ -166,19 +193,21 @@ public:
 	}
 
 	void report(std::ostream& stream = std::cout) const{
-		stream << "x_i\t|\tf(x_i)\t|\tP(x_i)\t|\t|P(x_i) - f(x_i)|\n" << std::string(64, '-') << '\n';
-		for (size_t i = 0; i < npoints; ++i){
-			double xi = a + i * (b - a) / npoints;
-			stream << xi << "\t|\t" << f(xi) << "\t|\t" << P(xi) << "\t|\t" << abs(P(xi) - f(xi)) << '\n';
+		stream << "x_i\t|\tf(x_i)\t|\tP(x_i)\t|\t|P(x_i) - f(x_i)|\n"
+				<< std::string(64, '-') << '\n';
+		for (size_t i = 0; i < nodes->size(); ++i){
+			stream << std::setprecision(4) << nodes->at(i) << "\t|\t" << f(nodes->at(i))
+					<< "\t|\t" << P(nodes->at(i)) << "\t|\t" << abs(P(nodes->at(i)) - f(nodes->at(i))) << '\n';
 		}
 		stream << std::string(64, '=') << "\n\n\n";
 
 		srand(time(NULL));
-		stream << "y_i\t|\tf(y_i)\t|\tP(y_i)\t|\t|P(y_i) - f(y_i)|\n" << std::string(64, '-') << '\n';
-		for (size_t i = 0; i < npoints; ++i){
+		stream << "y_i\t|\t f(y_i)\t|\tP(y_i)\t|\t|P(y_i) - f(y_i)|\n" << std::string(64, '-') << '\n';
+		for (size_t i = 0; i < nodes->size(); ++i){
 			double alpha = (double) rand() / (RAND_MAX);
-			double xi = a + (i + alpha) * (b - a) / npoints;
-			stream << std::setprecision(5) << xi << "\t|\t" << f(xi) << "\t|\t" << P(xi) << "\t|\t" << abs(P(xi) - f(xi)) << '\n';
+			double xi = nodes->at(i) + alpha * (nodes->interval().second - nodes->interval().first) / nodes->size();
+			stream << std::setprecision(4) << xi << "\t|\t" << f(xi)
+					<< "\t|\t" << P(xi) << "\t|\t" << abs(P(xi) - f(xi)) << '\n';
 		}
 		stream << std::string(64, '=') << "\n";
 	}
@@ -186,18 +215,18 @@ public:
 	virtual ~LagrangeInterpolator() = default;
 private:
 	Pynomial P;
-	double a, b;
-	size_t niters, npoints;
+	Nodes::Root *nodes;
 };
 
 double LagrangeInterpolator::f(double x){
-	return pow(2, x);
+	return sin(x);
 }
 
 int main(){
 	LagrangeInterpolator lp;
-	lp.setInterval(0, 10);
-	lp.fitUniform(20);
+	Nodes::Uniform nodes{20, 0, 10};
+	lp.setNodes(&nodes);
+	lp.fitUniform();
 	lp.report();
 	return 0;
 }
