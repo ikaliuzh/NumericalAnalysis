@@ -1,5 +1,6 @@
 #include <vector>
 #include <initializer_list>
+#include <sstream>
 #include <utility>
 #include <cmath>
 #include <limits>
@@ -13,15 +14,15 @@ template<typename T> T abs(T x){
 	return x;
 }
 
-class Pynomial{
+class Polynomial{
 public:
-	Pynomial()
+	Polynomial()
 		: coeffs({0}) {}
 
-	Pynomial(size_t N)
+	Polynomial(size_t N)
 		: coeffs(N){}
 
-	Pynomial(std::initializer_list<double> initl)
+	Polynomial(std::initializer_list<double> initl)
 		: coeffs(initl) {}
 
 	size_t size() const{
@@ -68,16 +69,16 @@ private:
 };
 
 
-Pynomial operator+(const Pynomial& lhs, const Pynomial& rhs){
-	Pynomial res;
+Polynomial operator+(const Polynomial& lhs, const Polynomial& rhs){
+	Polynomial res;
 	for (size_t i = 0; i < std::max(lhs.size(), rhs.size()); ++i){
 		res[i] = lhs[i] + rhs[i];
 	}
 	return res;
 }
 
-Pynomial operator*(const Pynomial& lhs, const Pynomial& rhs){
-	Pynomial res;
+Polynomial operator*(const Polynomial& lhs, const Polynomial& rhs){
+	Polynomial res;
 	for (size_t i = 0; i < lhs.size() + rhs.size(); ++i){
 		res[i] = 0;
 		for (size_t j = 0; j <= i; ++j)
@@ -87,21 +88,21 @@ Pynomial operator*(const Pynomial& lhs, const Pynomial& rhs){
 }
 
 
-Pynomial operator*(Pynomial lhs, const double& rhs){
+Polynomial operator*(Polynomial lhs, const double& rhs){
 	for (size_t i = 0; i < lhs.size(); ++i){
 		lhs[i] *= rhs;
 	}
 	return lhs;
 }
 
-Pynomial operator/(Pynomial lhs, const double& rhs){
+Polynomial operator/(Polynomial lhs, const double& rhs){
 	for (size_t i = 0; i < lhs.size(); ++i){
 		lhs[i] /= rhs;
 	}
 	return lhs;
 }
 
-std::ostream& operator<<(std::ostream& stream, const Pynomial& p){
+std::ostream& operator<<(std::ostream& stream, const Polynomial& p){
 	for (size_t i = 0; i < p.size(); ++i){
 		int sign = 1;
 		if (i != 0 && p[i] > 0)
@@ -118,6 +119,7 @@ std::ostream& operator<<(std::ostream& stream, const Pynomial& p){
 	}
 	return stream;
 }
+
 
 namespace Nodes{
 	class Root{
@@ -164,16 +166,15 @@ public:
 		nodes = v;
 	}
 
-
 	void fitUniform() {
 		for (size_t i = 0; i < nodes->size(); ++i){
-			Pynomial prod{1};
+			Polynomial prod{1};
 			for (size_t j = 0; j < nodes->size(); ++j){
 				if (j == i)
 					continue;
-				prod = prod * Pynomial{-nodes->at(j), 1} / (nodes->at(i) - nodes->at(j));
+				prod = prod * Polynomial{-nodes->at(j), 1} / (nodes->at(i) - nodes->at(j));
 			}
-			P = P + prod * Pynomial{f(nodes->at(i))};
+			P = P + prod * Polynomial{f(nodes->at(i))};
 		}
 	}
 
@@ -182,13 +183,14 @@ public:
 		double eps = 0;
 		for (size_t i = 0; i < nodes->size(); ++i){
 			double x = ((double) rand() / (RAND_MAX)) *
-					(nodes->interval().second - nodes->interval().first) + nodes->interval().first;
+					(nodes->interval().second - nodes->interval().first)
+					+ nodes->interval().first;
 			eps = std::max<double>(eps, abs(f(x)-P(x)));
 		}
 		return eps;
 	}
 
-	Pynomial getPolynom() const{
+	Polynomial getPolynom() const{
 		return P;
 	}
 
@@ -196,25 +198,30 @@ public:
 		stream << "x_i\t|\tf(x_i)\t|\tP(x_i)\t|\t|P(x_i) - f(x_i)|\n"
 				<< std::string(64, '-') << '\n';
 		for (size_t i = 0; i < nodes->size(); ++i){
-			stream << std::setprecision(4) << nodes->at(i) << "\t|\t" << f(nodes->at(i))
-					<< "\t|\t" << P(nodes->at(i)) << "\t|\t" << abs(P(nodes->at(i)) - f(nodes->at(i))) << '\n';
+			stream << std::setprecision(4) << nodes->at(i) <<
+					"\t|\t" << f(nodes->at(i)) << "\t|\t" <<
+					P(nodes->at(i)) << "\t|\t" <<
+					abs(P(nodes->at(i)) - f(nodes->at(i))) << '\n';
 		}
 		stream << std::string(64, '=') << "\n\n\n";
 
 		srand(time(NULL));
-		stream << "y_i\t|\t f(y_i)\t|\tP(y_i)\t|\t|P(y_i) - f(y_i)|\n" << std::string(64, '-') << '\n';
+		stream << "y_i\t|\t f(y_i)\t|\tP(y_i)\t|\t|P(y_i) - f(y_i)|\n" <<
+				std::string(64, '-') << '\n';
 		for (size_t i = 0; i < nodes->size(); ++i){
 			double alpha = (double) rand() / (RAND_MAX);
-			double xi = nodes->at(i) + alpha * (nodes->interval().second - nodes->interval().first) / nodes->size();
+			double xi = nodes->at(i) + alpha *
+					(nodes->interval().second - nodes->interval().first) / nodes->size();
 			stream << std::setprecision(4) << xi << "\t|\t" << f(xi)
-					<< "\t|\t" << P(xi) << "\t|\t" << abs(P(xi) - f(xi)) << '\n';
+					<< "\t|\t" << P(xi) << "\t|\t" <<
+					abs(P(xi) - f(xi)) << '\n';
 		}
 		stream << std::string(64, '=') << "\n";
 	}
 
 	virtual ~LagrangeInterpolator() = default;
 private:
-	Pynomial P;
+	Polynomial P;
 	Nodes::Root *nodes;
 };
 
