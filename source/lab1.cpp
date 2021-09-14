@@ -2,6 +2,7 @@
 #include <initializer_list>
 #include <sstream>
 #include <utility>
+#include <memory>
 #include <cmath>
 #include <limits>
 #include <cassert>
@@ -126,9 +127,24 @@ namespace Nodes{
 	public:
 		Root(size_t N, double A, double B)
 			: n(N), a(A), b(B){};
+		Root(std::initializer_list<double> ilist){
+			size_t i = 0;
+			for (auto v : ilist){
+				if (i == 0){
+					a = v;
+				}
+				b = v;
+				n = i;
+				++i;
+			}
+			++n;
+		}
 		virtual ~Root() = default;
 		virtual double operator[](size_t) const =0;
 		double at(size_t i) const {return this->operator[](i);};
+		void transform(size_t m, double c, double d) {
+			n = m; a = c; b = d;
+		}
 
 		size_t size() const{
 			return n;
@@ -152,6 +168,20 @@ namespace Nodes{
 			return a + i * (b - a) / n;
 		}
 	};
+
+	class Ordinary : public Nodes::Root{
+	public:
+		Ordinary(std::initializer_list<double> ilist)
+			:Root(ilist),
+			 vals(ilist)
+			 {}
+
+		double operator[](size_t i) const{
+				return vals[i];
+			}
+	private:
+		std::vector<double> vals;
+	};
 }
 
 
@@ -162,7 +192,8 @@ public:
 	LagrangeInterpolator()
 		: P(), nodes() {}
 
-	void setNodes(Nodes::Root *v){
+	void setNodes(Nodes::Root* v){
+		delete nodes;
 		nodes = v;
 	}
 
@@ -195,28 +226,28 @@ public:
 	}
 
 	void report(std::ostream& stream = std::cout) const{
-		stream << "x_i\t|\tf(x_i)\t|\tP(x_i)\t|\t|P(x_i) - f(x_i)|\n"
-				<< std::string(64, '-') << '\n';
+		stream << "\t x_i\t|\tf(x_i)\t|\tP(x_i)\t|\t|P(x_i) - f(x_i)|\n"
+				<< std::string(75, '-') << '\n';
 		for (size_t i = 0; i < nodes->size(); ++i){
-			stream << std::setprecision(4) << nodes->at(i) <<
+			stream << '\t' << std::setprecision(3) << nodes->at(i) <<
 					"\t|\t" << f(nodes->at(i)) << "\t|\t" <<
 					P(nodes->at(i)) << "\t|\t" <<
 					abs(P(nodes->at(i)) - f(nodes->at(i))) << '\n';
 		}
-		stream << std::string(64, '=') << "\n\n\n";
+		stream << std::string(75, '=') << "\n\n\n";
 
 		srand(time(NULL));
-		stream << "y_i\t|\t f(y_i)\t|\tP(y_i)\t|\t|P(y_i) - f(y_i)|\n" <<
-				std::string(64, '-') << '\n';
-		for (size_t i = 0; i < nodes->size(); ++i){
+		stream << "\t y_i\t|\t f(y_i)\t|\tP(y_i)\t|\t|P(y_i) - f(y_i)|\n" <<
+				std::string(75, '-') << '\n';
+		for (size_t i = 0; (i + 1) < nodes->size(); ++i){
 			double alpha = (double) rand() / (RAND_MAX);
 			double xi = nodes->at(i) + alpha *
-					(nodes->interval().second - nodes->interval().first) / nodes->size();
-			stream << std::setprecision(4) << xi << "\t|\t" << f(xi)
+					(nodes->at(i + 1) - nodes->at(i));
+			stream << '\t' << std::setprecision(3) << xi << "\t|\t" << f(xi)
 					<< "\t|\t" << P(xi) << "\t|\t" <<
 					abs(P(xi) - f(xi)) << '\n';
 		}
-		stream << std::string(64, '=') << "\n";
+		stream << std::string(75, '=') << "\n";
 	}
 
 	virtual ~LagrangeInterpolator() = default;
@@ -226,12 +257,13 @@ private:
 };
 
 double LagrangeInterpolator::f(double x){
-	return sin(x);
+	return exp(-x*x) * sin(x) + x*x;
 }
 
 int main(){
 	LagrangeInterpolator lp;
-	Nodes::Uniform nodes{20, 0, 10};
+	Nodes::Uniform nodes{20, -1, 1};
+	// Nodes::Ordinary nodes{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 	lp.setNodes(&nodes);
 	lp.fitUniform();
 	lp.report();
