@@ -258,6 +258,7 @@ private:
 
 double LagrangeInterpolator::f(double x){
 	return exp(-x*x) * sin(x) + x*x;
+	// return std::abs(x);
 }
 
 int main(){
