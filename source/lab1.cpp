@@ -148,6 +148,7 @@ namespace Nodes{
 			++n;
 		}
 		virtual ~Root() = default;
+
 		virtual double operator[](size_t) const =0;
 		double at(size_t i) const {return this->operator[](i);};
 		void transform(size_t m, double c, double d) {
@@ -207,7 +208,7 @@ namespace Nodes{
 		}
 
 		Ordinary* addNode(double x){
-			Ordinary *nodes = new Ordinary(this);
+			Ordinary* nodes = new Ordinary(this);
 			nodes->addNode(x);
 			return nodes;
 		}
@@ -247,10 +248,13 @@ public:
 			Ptmp = Ptmp * Polynomial{-nodes->at(i), 1};
 		}
 		P = P + a * Ptmp;
+
 		if (nodes->size() > 0){
 			Nodes::Root* ndsnew = nodes->addNode(x);
-			delete nodes;
-			nodes = ndsnew;
+			if (nodes != ndsnew){
+				// delete nodes;
+				nodes = ndsnew;
+			}
 		} else {
 			nodes = new Nodes::Ordinary({x});
 		}
