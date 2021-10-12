@@ -10,6 +10,7 @@
 #include <iostream>
 #include <iomanip>
 
+const double pi = 3.14159265358979323846;
 
 template<typename T> T abs(T x){
 	if (x < T(0)) return x * T(-1);
@@ -198,6 +199,29 @@ namespace Nodes{
 	};
 
 
+	class Chebyshev : public Nodes::Root{
+	public:
+		Chebyshev(size_t N, double A, double B)
+			: Root(N, A, B), vals(N), a(A), b(B){
+			for (size_t i = 0; i < N; ++i){
+				vals[i] = cos(pi * (i * 1.0 + 0.5) / N);
+			}
+		}
+
+		double operator[](size_t i) const{
+			return a + vals[i] * (b - a);
+		}
+
+		Ordinary* addNode(double x){
+			Ordinary* nodes = new Ordinary(this);
+			nodes->addNode(x);
+			return nodes;
+		}
+	private:
+		double a, b;
+		std::vector<double> vals;
+	};
+
 	class Uniform : public Nodes::Root{
 	public:
 		Uniform(size_t N, double A, double B)
@@ -252,7 +276,7 @@ public:
 		if (nodes->size() > 0){
 			Nodes::Root* ndsnew = nodes->addNode(x);
 			if (nodes != ndsnew){
-				// delete nodes;
+				// delete old node
 				nodes = ndsnew;
 			}
 		} else {
@@ -309,24 +333,30 @@ private:
 };
 
 double LagrangeInterpolator::f(double x){
-	return exp(-x*x) * sin(x) + x*x;
-	// return std::abs(x);
+	// return exp(-x*x) * sin(x) + x*x;
+	return std::abs(x);
 }
 
 int main(){
+
 	LagrangeInterpolator lp;
-	Nodes::Uniform nodes{10, 0, 10};
+	Nodes::Uniform nodes{3, 0, 3};
 	lp.setNodes(&nodes);
 	lp.fitUniform();
-	lp.addNode(10);
+	lp.addNode(3);
 	std::cout << std::endl << lp.getPolynom() << std::endl;
 
 	LagrangeInterpolator lp1;
-	Nodes::Uniform nodes1{11, 0, 11};
+	Nodes::Uniform nodes1{4, 0, 4};
 	lp1.setNodes(&nodes1);
 	lp1.fitUniform();
 	std::cout << std::endl << lp1.getPolynom() << std::endl;
 
-
+	LagrangeInterpolator lp2;
+	Nodes::Chebyshev nodes2{10, 0, 4};
+	lp2.setNodes(&nodes2);
+	lp2.fitUniform();
+	// std::cout << std::endl << lp2.getPolynom() << std::endl;
+	lp2.report();
 	return 0;
 }
