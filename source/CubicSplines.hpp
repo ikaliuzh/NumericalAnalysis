@@ -17,35 +17,32 @@ public:
 			x[i] = X->at(i);
 			a[i] = f(x[i]);
 		}
-
 		int n = x.size()-1;
-	    std::vector<long double> h;
 
+	    std::vector<long double> h(n);
 	    for(int i = 0; i < n; ++i)
-	        h.push_back(x[i+1]-x[i]);
+	        h[i] = x[i+1]-x[i];
 
-	    std::vector<long double> alpha;
-	    alpha.push_back(0);
+	    std::vector<long double> alpha(n + 1);
+	    alpha[0] = 0;
 	    for(int i = 1; i < n; ++i)
-	        alpha.push_back( 3*(a[i+1]-a[i])/h[i] - 3*(a[i]-a[i-1])/h[i-1]  );
+	        alpha[i] = 3*(a[i+1]-a[i])/h[i] - 3*(a[i]-a[i-1])/h[i-1];
 
 	    std::vector<long double> c(n+1), l(n+1), mu(n+1), z(n+1);
 	    l[0] = 1; mu[0] = 0; z[0] = 0;
 
 	    for(int i = 1; i < n; ++i)
 	    {
-	        l[i] = 2 *(x[i+1]-x[i-1])-h[i-1]*mu[i-1];
+	        l[i] = 2*(x[i+1]-x[i-1])-h[i-1]*mu[i-1];
 	        mu[i] = h[i]/l[i];
 	        z[i] = (alpha[i]-h[i-1]*z[i-1])/l[i];
 	    }
 
-	    l[n] = 1;
-	    z[n] = 0;
-	    c[n] = 0;
+	    l[n] = 1; z[n] = 0; c[n] = 0;
 
 	    for(int j = n-1; j >= 0; --j)
 	    {
-	        c[j] = z [j] - mu[j] * c[j+1];
+	        c[j] = z[j] - mu[j] * c[j+1];
 	        b[j] = (a[j+1]-a[j])/h[j]-h[j]*(c[j+1]+2*c[j])/3;
 	        d[j] = (c[j+1]-c[j])/3/h[j];
 	    }
