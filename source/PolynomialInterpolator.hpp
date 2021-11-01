@@ -75,6 +75,10 @@ public:
 		return eps;
 	}
 
+	long double operator()(long double t) const{
+		return P(t);
+	}
+
 	Polynomial getPolynom() const{
 		return P;
 	}
