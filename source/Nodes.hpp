@@ -67,6 +67,7 @@ namespace Nodes{
 
 		Ordinary* addNode(long double x){
 			vals.insert(std::upper_bound(vals.begin(), vals.end(), x), x);
+			n += 1;
 			return this;
 		}
 	private:

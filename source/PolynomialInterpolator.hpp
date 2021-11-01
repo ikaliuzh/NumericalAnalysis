@@ -19,6 +19,12 @@ public:
 	LagrangeInterpolator()
 		: P(), nodes() {}
 
+	LagrangeInterpolator(Nodes::Root *x)
+			: P(), nodes(x) {
+		fit();
+	}
+
+
 	void setNodes(Nodes::Root* v){
 		delete nodes;
 		nodes = v;
@@ -48,7 +54,8 @@ public:
 		if (nodes->size() > 0){
 			Nodes::Root* ndsnew = nodes->addNode(x);
 			if (nodes != ndsnew){
-				// delete old node; memory leak
+				// should delete old node; highly possible memory leak
+				// delete nodes;
 				nodes = ndsnew;
 			}
 		} else {
