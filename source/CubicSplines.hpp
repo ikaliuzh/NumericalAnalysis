@@ -31,8 +31,7 @@ public:
 	    std::vector<long double> c(n+1), l(n+1), mu(n+1), z(n+1);
 	    l[0] = 1; mu[0] = 0; z[0] = 0;
 
-	    for(int i = 1; i < n; ++i)
-	    {
+	    for(int i = 1; i < n; ++i){
 	        l[i] = 2*(x[i+1]-x[i-1])-h[i-1]*mu[i-1];
 	        mu[i] = h[i]/l[i];
 	        z[i] = (alpha[i]-h[i-1]*z[i-1])/l[i];
@@ -40,8 +39,7 @@ public:
 
 	    l[n] = 1; z[n] = 0; c[n] = 0;
 
-	    for(int j = n-1; j >= 0; --j)
-	    {
+	    for(int j = n-1; j >= 0; --j){
 	        c[j] = z[j] - mu[j] * c[j+1];
 	        b[j] = (a[j+1]-a[j])/h[j]-h[j]*(c[j+1]+2*c[j])/3;
 	        d[j] = (c[j+1]-c[j])/3/h[j];
