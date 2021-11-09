@@ -74,7 +74,7 @@ template <typename T, size_t M, size_t N>
 std::ostream& operator<<(std::ostream& stream, const Matrix<T, M, N>& matrix) {
 	for (size_t i = 0; i < M; ++i){
 		for (size_t j = 0; j < N; ++j){
-			stream << matrix[i][j] << ' ';
+			stream << matrix[i][j] << '\t';
 		}
 		stream << '\n';
 	}
@@ -112,4 +112,14 @@ Matrix<T, M1, M3> operator*(Matrix<T, M1, M2> lhs, const Matrix<T, M2, M3>& rhs)
 		}
 	}
 	return result;
+}
+
+template <typename T, size_t M, size_t N>
+Matrix<T, M, N> operator* (const T& alpha, Matrix<T, M, N> rhs) {
+	for (size_t i = 0; i < M; ++i) {
+		for (size_t j = 0; j < N; ++j) {
+			rhs[i][j] *= alpha;
+		}
+	}
+	return rhs;
 }

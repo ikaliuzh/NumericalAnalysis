@@ -104,7 +104,7 @@ namespace Nodes{
 			: Root(N, A, B) {}
 
 		long double operator[](size_t i) const{
-			return a + i * (b - a) / n;
+			return a + i * (b - a) / (n - 1);
 		}
 
 		Ordinary* addNode(long double x){
